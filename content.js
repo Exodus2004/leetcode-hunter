@@ -451,6 +451,8 @@ This strongly indicates the user is copy-pasting pre-written code from an extern
   const renderFlaggedUserCard = (user) => {
     const card = document.createElement('div');
     card.className = 'lc-cheater-user-card';
+    const contestSlug = getContestSlug();
+    const pageUrl = `https://leetcode.com/contest/${contestSlug}/ranking/${user.page}/`;
 
     const anomalyHtml = user.anomalies.map((a, index) => {
       if (a.type === 'first_solve') {
@@ -479,6 +481,7 @@ This strongly indicates the user is copy-pasting pre-written code from an extern
         <div class="lc-cheater-user-identity">
           <div class="lc-cheater-username-row">
             <span class="lc-cheater-user-rank">Rank ${user.rank}</span>
+            <a href="${pageUrl}" target="_blank" class="lc-cheater-page-link" title="Open ranking page ${user.page} in new tab">Page ${user.page}</a>
             <a href="https://leetcode.com/${user.username}/" target="_blank" class="lc-cheater-username">${user.username}</a>
           </div>
           <div class="lc-cheater-user-score">Score: ${user.score} pts</div>
@@ -666,6 +669,7 @@ This strongly indicates the user is copy-pasting pre-written code from an extern
                 username,
                 rank: contestant.rank,
                 score: contestant.score,
+                page: page,
                 anomalies
               };
               flaggedUsers.push(flaggedUser);
