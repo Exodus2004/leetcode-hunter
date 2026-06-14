@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "LeetCode Contest Cheater Detector",
+  "version": "1.0.1",
+  "description": "Scans LeetCode contest leaderboards for anomalous submission times and generates report templates.",
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://leetcode.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://leetcode.com/contest/*/ranking*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "action": {
+    "default_title": "LC Cheater Detector"
+  }
+}
