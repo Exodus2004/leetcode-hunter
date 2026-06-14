@@ -533,19 +533,19 @@ This strongly indicates the user is copy-pasting pre-written code from an extern
     card.querySelectorAll('.sub-report-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const idx = parseInt(e.currentTarget.getAttribute('data-index'), 10);
+        const idx = parseInt(btn.getAttribute('data-index'), 10);
         const anomaly = user.anomalies[idx];
         const text = generateReportTextSingle(user.username, anomaly);
         navigator.clipboard.writeText(text).then(() => {
           showToast(`Copied report for Q${anomaly.currNum || anomaly.prevNum} to clipboard!`);
-          const origText = e.currentTarget.textContent.trim();
-          e.currentTarget.textContent = "✓";
-          e.currentTarget.style.backgroundColor = "rgba(16, 185, 129, 0.2)";
-          e.currentTarget.style.color = "#34d399";
+          const origText = btn.textContent.trim();
+          btn.textContent = "✓";
+          btn.style.backgroundColor = "rgba(16, 185, 129, 0.2)";
+          btn.style.color = "#34d399";
           setTimeout(() => {
-            e.currentTarget.textContent = origText;
-            e.currentTarget.style.backgroundColor = "";
-            e.currentTarget.style.color = "";
+            btn.textContent = origText;
+            btn.style.backgroundColor = "";
+            btn.style.color = "";
           }, 1500);
         });
       });
