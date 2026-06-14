@@ -17,7 +17,8 @@
   const CONFIG_KEY = 'lc_cheater_detector_config';
   const DEFAULT_CONFIG = {
     q1Threshold: 20,          // seconds for Q1/first solve from start
-    consecutiveThreshold: 60,  // seconds between consecutive solves
+    consecutiveThreshold: 60,  // seconds between consecutive solves (Q2/Q3)
+    q4Threshold: 90,          // seconds specifically for Q4 gap
     startPage: 1,
     endPage: 5,
     rateLimitDelay: 350       // ms between API fetches
@@ -181,16 +182,23 @@
           <div class="lc-cheater-row">
             <div class="lc-cheater-input-group">
               <label for="lc-input-q1" title="Flag if a user solves any problem in under this time from contest start">
-                First Solve Threshold (sec)
+                First Solve (s)
               </label>
               <input type="number" id="lc-input-q1" class="lc-cheater-input" min="1" value="${config.q1Threshold}">
             </div>
             
             <div class="lc-cheater-input-group">
-              <label for="lc-input-consec" title="Flag if the time gap between consecutive accepted submissions is under this time">
-                Consecutive Solve Threshold (sec)
+              <label for="lc-input-consec" title="Flag if the time gap between Q1->Q2 or Q2->Q3 is under this time">
+                Q2/Q3 Gap (s)
               </label>
               <input type="number" id="lc-input-consec" class="lc-cheater-input" min="1" value="${config.consecutiveThreshold}">
+            </div>
+
+            <div class="lc-cheater-input-group">
+              <label for="lc-input-q4" title="Flag if the time gap to Q4 is under this time">
+                Q4 Gap (s)
+              </label>
+              <input type="number" id="lc-input-q4" class="lc-cheater-input" min="1" value="${config.q4Threshold}">
             </div>
           </div>
 
@@ -285,6 +293,7 @@
   // Input fields
   const elInputQ1 = document.getElementById('lc-input-q1');
   const elInputConsec = document.getElementById('lc-input-consec');
+  const elInputQ4 = document.getElementById('lc-input-q4');
   const elInputStartPage = document.getElementById('lc-input-start-page');
   const elInputEndPage = document.getElementById('lc-input-end-page');
 
@@ -292,6 +301,7 @@
   const syncConfigUI = () => {
     if (elInputQ1) elInputQ1.value = config.q1Threshold;
     if (elInputConsec) elInputConsec.value = config.consecutiveThreshold;
+    if (elInputQ4) elInputQ4.value = config.q4Threshold;
     if (elInputStartPage) elInputStartPage.value = config.startPage;
     if (elInputEndPage) elInputEndPage.value = config.endPage;
   };
@@ -300,6 +310,7 @@
   const readConfigUI = () => {
     config.q1Threshold = parseInt(elInputQ1.value, 10) || DEFAULT_CONFIG.q1Threshold;
     config.consecutiveThreshold = parseInt(elInputConsec.value, 10) || DEFAULT_CONFIG.consecutiveThreshold;
+    config.q4Threshold = parseInt(elInputQ4.value, 10) || DEFAULT_CONFIG.q4Threshold;
     config.startPage = Math.max(1, parseInt(elInputStartPage.value, 10) || DEFAULT_CONFIG.startPage);
     config.endPage = Math.max(config.startPage, parseInt(elInputEndPage.value, 10) || DEFAULT_CONFIG.endPage);
     saveConfig();
@@ -572,6 +583,7 @@ This strongly indicates the user is copy-pasting pre-written code from an extern
     // Set custom threshold filters
     const q1Threshold = config.q1Threshold;
     const consecutiveThreshold = config.consecutiveThreshold;
+    const q4Threshold = config.q4Threshold;
 
     elProgressStatus.textContent = "Loading contest details...";
     elProgressPercent.textContent = "0%";
@@ -585,7 +597,7 @@ This strongly indicates the user is copy-pasting pre-written code from an extern
       displayContestInfoCard(contest);
 
       console.log("=== SCAN DIAGNOSTIC DETAILS ===");
-      console.log(`Scan started. Q1 Threshold: ${q1Threshold}s, Consecutive Threshold: ${consecutiveThreshold}s`);
+      console.log(`Scan started. Q1 Threshold: ${q1Threshold}s, Q2/Q3 Threshold: ${consecutiveThreshold}s, Q4 Threshold: ${q4Threshold}s`);
       console.log(`Contest: ${contest.title} | StartTime (unix): ${contestStartTime}`);
 
       const totalPages = config.endPage - config.startPage + 1;
@@ -666,7 +678,11 @@ This strongly indicates the user is copy-pasting pre-written code from an extern
                 const prevSub = solved[j - 1];
                 const currSub = solved[j];
                 const diff = currSub.date - prevSub.date;
-                if (diff >= 0 && diff < consecutiveThreshold) {
+                
+                // Select threshold based on question number (Q4 gets a dedicated check)
+                const threshold = (currSub.qNum === 4) ? q4Threshold : consecutiveThreshold;
+                
+                if (diff >= 0 && diff < threshold) {
                   const prevTimeFromStart = prevSub.date - contestStartTime;
                   const currTimeFromStart = currSub.date - contestStartTime;
                   anomalies.push({
