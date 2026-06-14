@@ -765,14 +765,23 @@ This strongly indicates the user is copy-pasting pre-written code from an extern
     for (const link of links) {
       const href = link.getAttribute('href') || '';
       const text = link.textContent.trim();
+      const lowerText = text.toLowerCase();
       
-      // Case-insensitive exact text match
-      if (text.toLowerCase() === targetPath) {
+      // 1. Case-insensitive exact text match
+      if (lowerText === targetPath) {
         const tr = link.closest('tr') || link.closest('[role="row"]') || link.closest('.ranking-row') || link.closest('li');
         if (tr) return tr;
       }
       
-      // Clean and split URL pathname to check for username segments
+      // 2. Truncated text matching (e.g. "Archit08..." matches "Archit0853A")
+      // Clean visible text of trailing ellipsis
+      const cleanText = text.replace(/\.{3,}$/, '').toLowerCase();
+      if (cleanText.length >= 3 && targetPath.startsWith(cleanText)) {
+        const tr = link.closest('tr') || link.closest('[role="row"]') || link.closest('.ranking-row') || link.closest('li');
+        if (tr) return tr;
+      }
+      
+      // 3. Href segment match (URLs are never truncated, e.g. href="/Archit0853A/")
       try {
         const path = href.startsWith('http') ? new URL(href).pathname : href;
         const cleanPath = path.toLowerCase().replace(/^\/|\/$/g, '');
