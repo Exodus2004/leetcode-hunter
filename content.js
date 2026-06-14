@@ -408,8 +408,26 @@
     });
   };
 
+  // Helper: Parse current page number from LeetCode URL pathname
+  const getCurrentPageNumber = () => {
+    const match = window.location.pathname.match(/\/contest\/[^\/]+\/ranking\/(\d+)/);
+    return match ? parseInt(match[1], 10) : 1;
+  };
+
   // Scroll to and highlight a user row in LeetCode's ranking table
-  const highlightUserRow = (username) => {
+  const highlightUserRow = (username, userPage) => {
+    if (userPage) {
+      const curPage = getCurrentPageNumber();
+      if (curPage !== userPage) {
+        const contestSlug = getContestSlug();
+        const pageUrl = `https://leetcode.com/contest/${contestSlug}/ranking/${userPage}/`;
+        showToast(`Navigating to Page ${userPage}...`);
+        sessionStorage.setItem('lc_highlight_user', username);
+        window.location.href = pageUrl;
+        return;
+      }
+    }
+
     const row = findRowForUser(username);
     if (row) {
       isModifyingDOM = true;
@@ -523,7 +541,7 @@ This strongly indicates the user is copy-pasting pre-written code from an extern
     });
 
     card.querySelector('.btn-highlight-action').addEventListener('click', () => {
-      highlightUserRow(user.username);
+      highlightUserRow(user.username, user.page);
     });
 
     return card;
@@ -740,13 +758,32 @@ This strongly indicates the user is copy-pasting pre-written code from an extern
 
   // Helper: Find a table row corresponding to a LeetCode username
   const findRowForUser = (username) => {
+    if (!username) return null;
     const links = document.querySelectorAll('a');
+    const targetPath = username.toLowerCase();
+    
     for (const link of links) {
       const href = link.getAttribute('href') || '';
       const text = link.textContent.trim();
-      if (text === username || href.endsWith(`/${username}/`) || href.includes(`/users/${username}`)) {
+      
+      // Case-insensitive exact text match
+      if (text.toLowerCase() === targetPath) {
         const tr = link.closest('tr') || link.closest('[role="row"]') || link.closest('.ranking-row') || link.closest('li');
         if (tr) return tr;
+      }
+      
+      // Clean and split URL pathname to check for username segments
+      try {
+        const path = href.startsWith('http') ? new URL(href).pathname : href;
+        const cleanPath = path.toLowerCase().replace(/^\/|\/$/g, '');
+        const parts = cleanPath.split('/');
+        
+        if (parts.includes(targetPath) || parts[parts.length - 1] === targetPath) {
+          const tr = link.closest('tr') || link.closest('[role="row"]') || link.closest('.ranking-row') || link.closest('li');
+          if (tr) return tr;
+        }
+      } catch (e) {
+        // Safe fallback in case of malformed URLs
       }
     }
     return null;
@@ -846,12 +883,53 @@ This strongly indicates the user is copy-pasting pre-written code from an extern
     console.log("Registered table mutation observer.");
   };
 
+  // Check if there is a pending user highlighting request from a redirection
+  const checkPendingHighlight = () => {
+    try {
+      const username = sessionStorage.getItem('lc_highlight_user');
+      if (username) {
+        sessionStorage.removeItem('lc_highlight_user');
+        console.log(`Found pending highlight request for user: ${username}`);
+        
+        let attempts = 0;
+        const interval = setInterval(() => {
+          const row = findRowForUser(username);
+          if (row) {
+            clearInterval(interval);
+            isModifyingDOM = true;
+            try {
+              row.classList.add('lc-flagged-row');
+              row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              
+              row.style.outline = '3px solid #f43f5e';
+              row.style.boxShadow = '0 0 15px rgba(244, 63, 94, 0.4)';
+              setTimeout(() => {
+                row.style.outline = '';
+                row.style.boxShadow = '';
+              }, 3000);
+            } finally {
+              isModifyingDOM = false;
+            }
+          }
+          attempts++;
+          if (attempts > 30) {
+            clearInterval(interval);
+            console.log(`Failed to highlight user "${username}" after 3 seconds.`);
+          }
+        }, 100);
+      }
+    } catch (e) {
+      console.error("Error checking pending highlight:", e);
+    }
+  };
+
   try {
     observeTableChanges();
   } catch (e) {
     console.error("Failed to register MutationObserver:", e);
   }
 
+  checkPendingHighlight();
   syncConfigUI();
   console.log("LeetCode Contest Cheater Detector loaded successfully!");
 })();
