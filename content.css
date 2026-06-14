@@ -175,22 +175,28 @@
   flex-direction: column;
   gap: 4px;
   flex: 1;
+  min-width: 0;
 }
 
 .lc-cheater-input-group label {
   font-size: 12px;
   color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lc-cheater-input {
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
-  padding: 8px 12px;
+  padding: 8px 10px;
   color: #ffffff;
   font-size: 13px;
   outline: none;
   transition: border-color 0.2s ease;
+  width: 100% !important;
+  box-sizing: border-box;
 }
 
 .lc-cheater-input:focus {
